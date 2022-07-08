@@ -1,2 +1,4 @@
 /target
+*.swp
 rule_135.md
+/output
