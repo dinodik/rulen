@@ -1,3 +1,4 @@
+use std::env;
 use std::fs::File;
 use std::io::prelude::*;
 
@@ -43,11 +44,12 @@ fn output_ppm(filepath: &str, width: usize, height: usize, data: Vec<String>) ->
 }
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
     // const input: String = ""
-    let height: usize = 128;
-    let rule: u8 = 30;
+    let rule: u8 = args[1].parse().unwrap(); // u8 = 30;
+    let height: usize = args[2].parse().unwrap(); // 128;
+    let initial_state = args[3].clone(); // format!("{:0256b}", 1u128 << 127);
 
-    let initial_state = format!("{:0256b}", 1u128 << 127);
     let width: usize = initial_state.len();
 
     let mut output: Vec<String> = Vec::new();
