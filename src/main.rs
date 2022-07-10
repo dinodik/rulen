@@ -1,4 +1,6 @@
-use std::env;
+use clap::{ArgGroup, Parser};
+use chrono;
+use std::path::PathBuf;
 use std::fs::File;
 use std::io::prelude::*;
 
@@ -43,14 +45,104 @@ fn output_ppm(filepath: &str, width: usize, height: usize, data: Vec<String>) ->
     Ok(())
 }
 
-fn main() {
-    let args: Vec<String> = env::args().collect();
-    // const input: String = ""
-    let rule: u8 = args[1].parse().unwrap(); // u8 = 30;
-    let height: usize = args[2].parse().unwrap(); // 128;
-    let initial_state = args[3].clone(); // format!("{:0256b}", 1u128 << 127);
+/// A program to simulate Wolfram's Rule N cellular automaton and output result into a .ppm file.
+#[derive(Parser, Debug)]
+#[clap(about)]
+#[clap(group(
+            ArgGroup::new("setting")
+                .required(true)
+                .args(&["preset", "input"])
+        ))]
+struct Args {
+    /// Rule [0-255]
+    #[clap(short, long, value_parser, default_value_t = 135)]
+    rule: u8,
 
-    let width: usize = initial_state.len();
+    /// Width of simulation
+    #[clap(short, long, value_parser = parse_size)]
+    width: Option<usize>,
+
+    /// Height of simulation
+    #[clap(short, long, value_parser = parse_size, default_value_t = 256)]
+    height: usize,
+
+    #[clap(long, value_parser = parse_preset)]
+    preset: Option<PresetOption>,
+
+    #[clap(short, long, value_name = "STATE", value_parser = parse_input)]
+    input: Option<String>,
+
+    #[clap(short, long, value_name = "FILENAME", value_parser)]
+    output: Option<PathBuf>
+}
+
+#[derive(Debug, Clone)]
+enum PresetOption {
+    Random = 0,
+    Centre = 1,
+    Edges = 2,
+    Alternate = 3,
+}
+
+fn parse_size(s: &str) -> Result<usize, String> {
+    let size: usize = s
+        .parse()
+        .map_err(|_| format!("`{}` isn't a valid number", s))?;
+    if size > 0 {
+        Ok(size)
+    } else {
+        Err(format!("size is out of range"))
+    }
+}
+
+fn parse_preset(s: &str) -> Result<PresetOption, String> {
+    let option: u8 = s
+        .parse()
+        .map_err(|_| format!("`{}` isn't a valid number", s))?;
+    match option {
+        option if option == PresetOption::Random as u8 => Ok(PresetOption::Random),
+        option if option == PresetOption::Centre as u8 => Ok(PresetOption::Centre),
+        option if option == PresetOption::Edges as u8 => Ok(PresetOption::Edges),
+        option if option == PresetOption::Alternate as u8 => Ok(PresetOption::Alternate),
+        _ => Err(format!("option does not exist"))
+    }
+}
+
+fn parse_input(s: &str) -> Result<String, String> {
+    let input = s.to_string();
+    let len = input.len();
+    if (1..=usize::MAX).contains(&len) {
+        // Ok(State {cells: (&input[2..]).to_string(), width: len})
+        Ok((&input[2..]).to_string())
+    } else {
+        return Err(format!("state length is out of range"))
+    }
+}
+
+// #[derive(Debug, Clone)]
+// struct State {
+//     cells: String,
+//     width: usize,
+// }
+
+fn main() {
+    let args = Args::parse();
+
+    let rule: u8 = args.rule;
+    // let width: usize = args.width;
+    let height: usize = args.height;
+    let initial_state = if let Some(state) = args.input.as_deref() {
+        state.to_string()
+    } else {
+        println!("Invalid initial state");
+        format!("00100")
+    };
+    let width = initial_state.len();
+    let mut filepath = format!("output/output-{}.ppm", chrono::offset::Local::now());
+
+    if let Some(file) = args.output {
+        filepath = file.into_os_string().into_string().unwrap();
+    }
 
     let mut output: Vec<String> = Vec::new();
 
@@ -60,7 +152,7 @@ fn main() {
         row = iterate_rule(rule, row, width);
     }
 
-    let _result = match output_ppm("output/output.ppm", width, height, output) {
+    let _result = match output_ppm(&filepath, width, height, output) {
         Ok(_) => println!("Success!"),
         Err(error) => panic!("Problem writing file: {:?}", error),
     };
