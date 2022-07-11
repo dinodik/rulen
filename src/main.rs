@@ -1,5 +1,6 @@
 use clap::{ArgGroup, Parser};
 use chrono;
+use rand::Rng;
 use std::path::PathBuf;
 use std::fs::File;
 use std::io::prelude::*;
@@ -28,17 +29,18 @@ fn iterate_rule(rule: u8, state: String, width: usize) -> String {
     next_state
 }
 
-fn output_ppm(filepath: &str, width: usize, height: usize, data: Vec<String>) -> std::io::Result<()> {
+fn output_ppm(filepath: &PathBuf, width: usize, height: usize, data: Vec<String>) -> std::io::Result<()> {
     let mut file = File::create(filepath)?;
     let header = format!("{}\n{} {}\n", "P1", width.to_string(), height.to_string());
     file.write_all(header.as_bytes())?;
 
     for i in 0..height {
-        let line = data[i]
+        let mut line = data[i]
             .chars()
             .map(|c| c.to_string())
             .collect::<Vec<String>>()
             .join(" ");
+        line.push('\n');
         file.write_all(line.as_bytes())?;
     }
 
@@ -58,20 +60,23 @@ struct Args {
     #[clap(short, long, value_parser, default_value_t = 135)]
     rule: u8,
 
-    /// Width of simulation
-    #[clap(short, long, value_parser = parse_size)]
-    width: Option<usize>,
+    /// Width of simulation [min. 3]
+    #[clap(short, long, value_parser = parse_size, default_value_t = 256)]
+    width: usize,
 
-    /// Height of simulation
+    /// Height of simulation [min. 3]
     #[clap(short, long, value_parser = parse_size, default_value_t = 256)]
     height: usize,
 
-    #[clap(long, value_parser = parse_preset)]
+    /// Preset initial state [0-3]: {0: Random, 1: Centre, 2: Edges, 3: Alternate}
+    #[clap(short, long, value_parser = parse_preset)]
     preset: Option<PresetOption>,
 
+    /// Manual initial state, ASCII is assumed if not prefixed with 0b or 0x
     #[clap(short, long, value_name = "STATE", value_parser = parse_input)]
     input: Option<String>,
 
+    /// Output filename
     #[clap(short, long, value_name = "FILENAME", value_parser)]
     output: Option<PathBuf>
 }
@@ -88,10 +93,10 @@ fn parse_size(s: &str) -> Result<usize, String> {
     let size: usize = s
         .parse()
         .map_err(|_| format!("`{}` isn't a valid number", s))?;
-    if size > 0 {
+    if size >= 3 {
         Ok(size)
     } else {
-        Err(format!("size is out of range"))
+        Err(format!("size is out of range, must be at least 3"))
     }
 }
 
@@ -104,7 +109,7 @@ fn parse_preset(s: &str) -> Result<PresetOption, String> {
         option if option == PresetOption::Centre as u8 => Ok(PresetOption::Centre),
         option if option == PresetOption::Edges as u8 => Ok(PresetOption::Edges),
         option if option == PresetOption::Alternate as u8 => Ok(PresetOption::Alternate),
-        _ => Err(format!("option does not exist"))
+        _ => Err(format!("option does not exist")),
     }
 }
 
@@ -119,30 +124,62 @@ fn parse_input(s: &str) -> Result<String, String> {
     }
 }
 
+// minimums:
+// 3 bits   "0b111"
+// 1 hex    "0xf"
+// 1 ascii  "z"
+
 // #[derive(Debug, Clone)]
 // struct State {
 //     cells: String,
 //     width: usize,
 // }
 
+fn generate_preset_state(option: &PresetOption, width: &usize) -> String {
+    let mut state = String::new();
+    match option {
+        PresetOption::Random => {
+            let mut rng = rand::thread_rng();
+            for _ in 0..*width {
+                let p: f32 = rng.gen();
+                state.push(if p < 0.5 {'0'} else {'1'});
+            }
+        },
+        PresetOption::Centre => {
+            let half = *width / 2;
+            state = format!("{}1{}", "0".repeat(half), "0".repeat(half - 1));
+        },
+        PresetOption::Edges => {
+            state = format!("1{}1", "0".repeat(*width - 2))
+        },
+        PresetOption::Alternate => {
+            for i in 0..*width {
+                state.push(if i % 2 == 0 {'0'} else {'1'});
+            }
+        },
+    }
+    state
+}
+
+// TODO: More colours with higher base states? Try with trinary first
+
 fn main() {
     let args = Args::parse();
 
+    // Retrieving arguments
     let rule: u8 = args.rule;
-    // let width: usize = args.width;
     let height: usize = args.height;
-    let initial_state = if let Some(state) = args.input.as_deref() {
+    let initial_state = if let Some(state) = args.input {
         state.to_string()
     } else {
-        println!("Invalid initial state");
-        format!("00100")
+        generate_preset_state(&args.preset.unwrap(), &args.width)
     };
     let width = initial_state.len();
-    let mut filepath = format!("output/output-{}.ppm", chrono::offset::Local::now());
-
-    if let Some(file) = args.output {
-        filepath = file.into_os_string().into_string().unwrap();
-    }
+    let filepath = if let Some(file) = args.output {
+        file
+    } else {
+        PathBuf::from(format!("output/output-{}.ppm", chrono::offset::Local::now()))
+    };
 
     let mut output: Vec<String> = Vec::new();
 
@@ -153,7 +190,7 @@ fn main() {
     }
 
     let _result = match output_ppm(&filepath, width, height, output) {
-        Ok(_) => println!("Success!"),
+        Ok(_) => println!("Success! Wrote to {}", filepath.display()),
         Err(error) => panic!("Problem writing file: {:?}", error),
     };
 }
