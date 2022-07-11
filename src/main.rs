@@ -60,11 +60,11 @@ struct Args {
     #[clap(short, long, value_parser, default_value_t = 135)]
     rule: u8,
 
-    /// Width of simulation [min. 3]
+    /// Width of simulation [min. 3px], overridden by length of --input <STATE>
     #[clap(short, long, value_parser = parse_size, default_value_t = 256)]
     width: usize,
 
-    /// Height of simulation [min. 3]
+    /// Height of simulation [min. 3px]
     #[clap(short, long, value_parser = parse_size, default_value_t = 256)]
     height: usize,
 
@@ -72,7 +72,7 @@ struct Args {
     #[clap(short, long, value_parser = parse_preset)]
     preset: Option<PresetOption>,
 
-    /// Manual initial state, ASCII is assumed if not prefixed with 0b or 0x
+    /// Manual initial state [min. 3 bits], ASCII is assumed if not prefixed with 0b or 0x
     #[clap(short, long, value_name = "STATE", value_parser = parse_input)]
     input: Option<String>,
 
@@ -114,26 +114,54 @@ fn parse_preset(s: &str) -> Result<PresetOption, String> {
 }
 
 fn parse_input(s: &str) -> Result<String, String> {
-    let input = s.to_string();
-    let len = input.len();
+    // let len = s.chars().count();
+    let len = s.len();
     if (1..=usize::MAX).contains(&len) {
-        // Ok(State {cells: (&input[2..]).to_string(), width: len})
-        Ok((&input[2..]).to_string())
+        if len > 2 {
+            match &s[..2] {
+                "0b" => {
+                    let mut state = String::new();
+                    for c in s[2..].chars() {
+                        if ['0', '1'].contains(&c) {
+                            state.push(c);
+                        } else {
+                            return Err(format!("invalid binary string"))
+                        }
+                    }
+                    Ok(state)
+                },
+                "0x" => {
+                    let mut state = String::new();
+                    for c in s[2..].chars() {
+                        let hex = u8::from_str_radix(&c.to_string(), 16); // gross
+                        match hex {
+                            Ok(n) => state.push_str(&format!("{:04b}", n)),
+                            Err(_) => return Err(format!("invalid hexadecimal string")),
+                        }
+                    }
+                    Ok(state)
+                },
+                _ => ascii_to_binary(s)
+            }
+        // treat as ascii, note that simply "0b" and "0x" without values will also be ascii
+        } else {
+            ascii_to_binary(s)
+        }
     } else {
-        return Err(format!("state length is out of range"))
+        Err(format!("state length is out of range"))
     }
 }
 
-// minimums:
-// 3 bits   "0b111"
-// 1 hex    "0xf"
-// 1 ascii  "z"
-
-// #[derive(Debug, Clone)]
-// struct State {
-//     cells: String,
-//     width: usize,
-// }
+fn ascii_to_binary(s: &str) -> Result<String, String> {
+    let mut state = String::new();
+    for c in s.as_bytes() {
+        match c.is_ascii() {
+            true => state.push_str(&format!("{:08b}", c)),
+            false => return Err(format!("invalid ascii string")),
+        }
+    }
+    Ok(state)
+}
 
 fn generate_preset_state(option: &PresetOption, width: &usize) -> String {
     let mut state = String::new();
@@ -147,7 +175,8 @@ fn generate_preset_state(option: &PresetOption, width: &usize) -> String {
         },
         PresetOption::Centre => {
             let half = *width / 2;
-            state = format!("{}1{}", "0".repeat(half), "0".repeat(half - 1));
+            let other_half = if *width % 2 == 0 {half - 1} else {half};
+            state = format!("{}1{}", "0".repeat(half), "0".repeat(other_half));
         },
         PresetOption::Edges => {
             state = format!("1{}1", "0".repeat(*width - 2))
@@ -162,6 +191,7 @@ fn generate_preset_state(option: &PresetOption, width: &usize) -> String {
 }
 
 // TODO: More colours with higher base states? Try with trinary first
+// TODO: Toggable wrapping
 
 fn main() {
     let args = Args::parse();
