@@ -113,14 +113,16 @@ fn parse_preset(s: &str) -> Result<PresetOption, String> {
     }
 }
 
+/// Parse command line input for setting initial state. Handles 0b binary, 0x hex, and ASCII strings
 fn parse_input(s: &str) -> Result<String, String> {
-    // let len = s.chars().count();
     let len = s.len();
+    // mutable state for each block to fill out, returned at the end.
+    // errors along the way will be immediately returned
+    let mut state = String::new();
     if (1..=usize::MAX).contains(&len) {
         if len > 2 {
             match &s[..2] {
                 "0b" => {
-                    let mut state = String::new();
                     for c in s[2..].chars() {
                         if ['0', '1'].contains(&c) {
                             state.push(c);
@@ -128,10 +130,8 @@ fn parse_input(s: &str) -> Result<String, String> {
                             return Err(format!("invalid binary string"))
                         }
                     }
-                    Ok(state)
                 },
                 "0x" => {
-                    let mut state = String::new();
                     for c in s[2..].chars() {
                         let hex = u8::from_str_radix(&c.to_string(), 16); // gross
                         match hex {
@@ -139,16 +139,27 @@ fn parse_input(s: &str) -> Result<String, String> {
                             Err(_) => return Err(format!("invalid hexadecimal string")),
                         }
                     }
-                    Ok(state)
                 },
-                _ => ascii_to_binary(s)
+                _ => match ascii_to_binary(s) {
+                    Ok(binary_state) => state = binary_state,
+                    Err(error) => return Err(error)
+                }
             }
         // treat as ascii, note that simply "0b" and "0x" without values will also be ascii
         } else {
-            ascii_to_binary(s)
+            match ascii_to_binary(s) {
+                Ok(binary_state) => state = binary_state,
+                Err(error) => return Err(error)
+            }
         }
     } else {
-        Err(format!("state length is out of range"))
+        return Err(format!("state length is out of range"))
+    }
+    // 3 is minimum width, as documented. Should really be a const but this is the only occurance
+    if state.len() >= 3 {
+        Ok(state)
+    } else {
+        Err(format!("state is too short"))
     }
 }
 
@@ -211,6 +222,7 @@ fn main() {
         PathBuf::from(format!("output/output-{}.ppm", chrono::offset::Local::now()))
     };
 
+    // Simulating
     let mut output: Vec<String> = Vec::new();
 
     let mut row = initial_state;
@@ -219,6 +231,7 @@ fn main() {
         row = iterate_rule(rule, row, width);
     }
 
+    // Outputting
     let _result = match output_ppm(&filepath, width, height, output) {
         Ok(_) => println!("Success! Wrote to {}", filepath.display()),
         Err(error) => panic!("Problem writing file: {:?}", error),
