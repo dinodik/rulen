@@ -38,6 +38,7 @@ fn iterate_rule(rule: u8, state: String, width: usize, wrapping: bool) -> String
     next_state
 }
 
+// TODO: check if .ppm is already in filepath
 fn output_ppm(filepath: &PathBuf, width: usize, height: usize, data: Vec<String>) -> std::io::Result<()> {
     let mut file = File::create(filepath)?;
     let header = format!("{}\n{} {}\n", "P1", width.to_string(), height.to_string());
@@ -55,7 +56,6 @@ fn output_ppm(filepath: &PathBuf, width: usize, height: usize, data: Vec<String>
 
     Ok(())
 }
-// TODO: check if .ppm is already in filepath
 
 /// A program to simulate Wolfram's Rule N cellular automaton and output result into a .ppm file.
 #[derive(Parser, Debug)]

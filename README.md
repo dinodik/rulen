@@ -18,7 +18,7 @@ Then find the binary under `target/release/` and run it:
 `--help` ~ Show options and quit.
 
 `-i, --input <STATE>` ~ Manually set the initial state. The input state can be processed three different ways depending on the prefix: as binary, as hexadecimal, or as ASCII. For binary and hexadecimal, apply prefixes `0b` or `0x` respectively, whereas ASCII is assumed for anything else. Minimum length of 3 bits ie. 3 binary digits, 1 hexadecimal digit, or 1 ASCII character.
-* Example: `--input 0b1011101`, `-i 0xff12`, `-i celluar`, and `-i "cellular automaton"`.
+* Examples: `--input 0b1011101`, `-i 0xff12`, `-i celluar`, and `-i "cellular automaton"`.
 * Note that simply the prefixes by themselves without any binary or hexadecimal digits following will be interpreted as ASCII.
 
 `--no-wrapping` ~ Disable wrapping at the corners of each state, instead out-of-bounds neighbours are assumed to be `0`.
@@ -38,7 +38,7 @@ Then find the binary under `target/release/` and run it:
 ## Examples
 **NOTE**: All .ppm images generated below were converted via ImageMagick to .png to be displayed here. Originals can be found in `examples/`.
 ```
-./rulen --width 512 --height 256 --preset 1 --output ../../examples/1.ppm
+./rulen --width 512 --height 256 --rule 30 --preset 1 --output ../../examples/1.ppm
 ```
 <p align="center">
     <img src="examples/1.png" />
@@ -71,6 +71,6 @@ Then find the binary under `target/release/` and run it:
 
 # TODO
 * Add brief explanation of the cellular automaton in README.
-* Add option to disable wrapping.
 * Add .png support.
+* Make default output file name prettier.
 * Consider adding support for states in higher bases to allow for more colours than 2.
