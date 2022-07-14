@@ -21,6 +21,8 @@ Then find the binary under `target/release/` and run it:
 * Example: `--input 0b1011101`, `-i 0xff12`, `-i celluar`, and `-i "cellular automaton"`.
 * Note that simply the prefixes by themselves without any binary or hexadecimal digits following will be interpreted as ASCII.
 
+`--no-wrapping` ~ Disable wrapping at the corners of each state, instead out-of-bounds neighbours are assumed to be `0`.
+
 `-o, --output <FILEPATH>` ~ Manually provide a filepath for the output. Default is `output-{yy-MM-dd-HH-mm-ss}.ppm`.
 
 `-p, --preset <PRESET>` ~ Automatically set the initial state. Currently four presets are defined, each of which are independent of the defined `width`.
