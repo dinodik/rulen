@@ -12,6 +12,12 @@ Then find the binary under `target/release/` and run it:
 ./rulen [OPTIONS] <--preset <PRESET>|--input <STATE>>
 ```
 
+## Examples
+```
+./rulen --width 512 --height 256 --preset 1 --output examples/1.ppm
+```
+![-w 512 -h 256 -p 1](examples/1.ppm)
+
 ## Options
 `-h, --height <HEIGHT>` ~ Height of the simulation (ie. image), dictates how many iterations are simulated. Minimum of 3 pixels and default of 256 pixels.
 
