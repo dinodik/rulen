@@ -5,26 +5,35 @@ use std::path::PathBuf;
 use std::fs::File;
 use std::io::prelude::*;
 
-fn iterate_rule(rule: u8, state: String, width: usize) -> String {
+fn iterate_rule(rule: u8, state: String, width: usize, wrapping: bool) -> String {
     let mut next_state = String::new();
-    let curr_state: Vec<char> = state.chars().collect();
     let mut rule_chars: Vec<char> = format!("{:08b}", rule).chars().collect();
     rule_chars.reverse();
 
     // handle first
-    let pattern = curr_state[width - 1].to_string() + &state[..2];
+    let pattern = if wrapping {
+        (&state[(width - 1)..=(width - 1)]).to_string() + &state[..2]
+    } else {
+       state[..2].to_string()
+    };
     let pattern = usize::from_str_radix(&pattern, 2).unwrap();
     next_state.push(rule_chars[pattern]);
 
-    // handle rest
-    for i in 1..width {
-        let mut pattern = String::new();
-        for j in 0..3 {
-            pattern.push(curr_state[(i + j - 1) % width]);
-        }
+    // handle in between
+    for i in 1..(width - 1) {
+        let pattern = &state[(i - 1)..=(i + 1)];
         let pattern = usize::from_str_radix(&pattern, 2).unwrap();
         next_state.push(rule_chars[pattern]);
     }
+
+    // handle last
+    let pattern = if wrapping {
+        (&state[(width - 1)..]).to_string() + &state[0..=0]
+    } else {
+        (&state[(width - 1)..]).to_string() + "0"
+    };
+    let pattern = usize::from_str_radix(&pattern, 2).unwrap();
+    next_state.push(rule_chars[pattern]);
 
     next_state
 }
@@ -46,6 +55,7 @@ fn output_ppm(filepath: &PathBuf, width: usize, height: usize, data: Vec<String>
 
     Ok(())
 }
+// TODO: check if .ppm is already in filepath
 
 /// A program to simulate Wolfram's Rule N cellular automaton and output result into a .ppm file.
 #[derive(Parser, Debug)]
@@ -78,7 +88,11 @@ struct Args {
 
     /// Output filepath
     #[clap(short, long, value_name = "FILENAME", value_parser)]
-    output: Option<PathBuf>
+    output: Option<PathBuf>,
+
+    /// Disable wrapping during iteration, will assume outside neighbour is 0
+    #[clap(long="no-wrapping", action)]
+    disable_wrapping: bool
 }
 
 #[derive(Debug, Clone)]
@@ -222,6 +236,7 @@ fn main() {
     } else {
         PathBuf::from(format!("output/output-{}.ppm", chrono::offset::Local::now()))
     };
+    let wrapping = if args.disable_wrapping {false} else {true};
 
     // Simulating
     let mut output: Vec<String> = Vec::new();
@@ -229,7 +244,7 @@ fn main() {
     let mut row = initial_state;
     for _ in 0..height {
         output.push(row.clone());
-        row = iterate_rule(rule, row, width);
+        row = iterate_rule(rule, row, width, wrapping);
     }
 
     // Outputting
