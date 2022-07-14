@@ -12,12 +12,6 @@ Then find the binary under `target/release/` and run it:
 ./rulen [OPTIONS] <--preset <PRESET>|--input <STATE>>
 ```
 
-## Examples
-```
-./rulen --width 512 --height 256 --preset 1 --output examples/1.ppm
-```
-![-w 512 -h 256 -p 1](examples/1.ppm)
-
 ## Options
 `-h, --height <HEIGHT>` ~ Height of the simulation (ie. image), dictates how many iterations are simulated. Minimum of 3 pixels and default of 256 pixels.
 
@@ -41,6 +35,36 @@ Then find the binary under `target/release/` and run it:
 
 `-w, --width <WIDTH>` ~ Width of the simulation (ie. image), dictates the size of the initial state and the states of all iterations. Minimum of 3 pixels and default of 256 pixels.
 
+## Examples
+**NOTE**: All .ppm images generated below were converted via ImageMagick to .png to be displayed here. Originals can be found in `examples/`.
+```
+./rulen --width 512 --height 256 --preset 1 --output ../../examples/1.ppm
+```
+<p align="center">
+    <img src="examples/1.png" />
+</p>
+
+```
+./rulen --width 256 --height 256 --rule 161 --preset 2 --no-wrapping --output ../../examples/2.ppm
+```
+<p align="center">
+    <img src="examples/2.png" />
+</p>
+
+```
+./rulen --height 256 --rule 105 --input "Stephen Wolfram's Cellular Automata" --output ../../examples/3.ppm
+```
+<p align="center">
+    <img src="examples/3.png" />
+</p>
+
+```
+./rulen --height 256 --rule 135 --input 0x4C6F72656D20697073756D20646F6C6F722073697420616D65742C20636F6E7365637465747572206164697069736369 --output ../../examples/4.ppm
+```
+<p align="center">
+    <img src="examples/4.png" />
+</p>
+
 # Motivation
 * First learnt about this from James Grime's [Cambridge has a new mathsy train station](https://youtu.be/aeyhnrZvQBE), and decided eventually to use it as a first project in Rust.
 * It's also my first attempt at a *real* application, one that can be released and not be immediately broken.
@@ -48,4 +72,5 @@ Then find the binary under `target/release/` and run it:
 # TODO
 * Add brief explanation of the cellular automaton in README.
 * Add option to disable wrapping.
+* Add .png support.
 * Consider adding support for states in higher bases to allow for more colours than 2.
