@@ -68,7 +68,7 @@ struct Args {
     #[clap(short, long, value_parser = parse_size, default_value_t = 256)]
     height: usize,
 
-    /// Preset initial state [0-3]: {0: Random, 1: Centre, 2: Edges, 3: Alternate}
+    /// Preset initial state [0-3]: {0: Random, 1: Centre, 2: Corners, 3: Alternate}
     #[clap(short, long, value_parser = parse_preset)]
     preset: Option<PresetOption>,
 
@@ -76,7 +76,7 @@ struct Args {
     #[clap(short, long, value_name = "STATE", value_parser = parse_input)]
     input: Option<String>,
 
-    /// Output filename
+    /// Output filepath
     #[clap(short, long, value_name = "FILENAME", value_parser)]
     output: Option<PathBuf>
 }
@@ -85,7 +85,7 @@ struct Args {
 enum PresetOption {
     Random = 0,
     Centre = 1,
-    Edges = 2,
+    Corners = 2,
     Alternate = 3,
 }
 
@@ -107,7 +107,7 @@ fn parse_preset(s: &str) -> Result<PresetOption, String> {
     match option {
         option if option == PresetOption::Random as u8 => Ok(PresetOption::Random),
         option if option == PresetOption::Centre as u8 => Ok(PresetOption::Centre),
-        option if option == PresetOption::Edges as u8 => Ok(PresetOption::Edges),
+        option if option == PresetOption::Corners as u8 => Ok(PresetOption::Corners),
         option if option == PresetOption::Alternate as u8 => Ok(PresetOption::Alternate),
         _ => Err(format!("option does not exist")),
     }
@@ -152,6 +152,7 @@ fn parse_input(s: &str) -> Result<String, String> {
                 Err(error) => return Err(error)
             }
         }
+    // one character inputs are treated as ascii
     } else {
         return Err(format!("state length is out of range"))
     }
@@ -189,7 +190,7 @@ fn generate_preset_state(option: &PresetOption, width: &usize) -> String {
             let other_half = if *width % 2 == 0 {half - 1} else {half};
             state = format!("{}1{}", "0".repeat(half), "0".repeat(other_half));
         },
-        PresetOption::Edges => {
+        PresetOption::Corners => {
             state = format!("1{}1", "0".repeat(*width - 2))
         },
         PresetOption::Alternate => {
