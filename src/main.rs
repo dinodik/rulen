@@ -57,7 +57,7 @@ fn output_ppm(filepath: &PathBuf, width: usize, height: usize, data: Vec<String>
         ))]
 struct Args {
     /// Rule [0-255]
-    #[clap(short, long, value_parser, default_value_t = 135)]
+    #[clap(short, long, value_parser, default_value_t = 30)]
     rule: u8,
 
     /// Width of simulation [min. 3px], overridden by length of --input <STATE>

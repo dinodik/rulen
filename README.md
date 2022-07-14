@@ -1,6 +1,6 @@
 2022-07-08
-# Rule 135 Cellular Automaton
-A Rust implementation of the [Rule 30](https://en.wikipedia.org/wiki/Rule_30) cellular automaton introduced by Stephen Wolfram in 1983.
+# Rule N Cellular Automaton
+A Rust implementation of the generalised [Rule 30](https://en.wikipedia.org/wiki/Rule_30) cellular automaton introduced by Stephen Wolfram in 1983.
 
 # Usage
 First clone the repository and build the binary:
@@ -9,7 +9,7 @@ cargo build --release
 ```
 Then find the binary under `target/release/` and run it:
 ```
-./rule_135 [OPTIONS] <--preset <PRESET>|--input <STATE>>
+./rulen [OPTIONS] <--preset <PRESET>|--input <STATE>>
 ```
 
 ## Options
@@ -29,7 +29,7 @@ Then find the binary under `target/release/` and run it:
 * 2 - Corners: string of binary `0`s except for two binary `1`s, one at the start and one at the end.
 * 3 - Alternate: string of alternating binary `0`s and `1`s.
 
-`-r, --rule <RULE>` ~ Sets the rule of the simulation. Range is from 0 to 255, inclusive, and default is 135.
+`-r, --rule <RULE>` ~ Sets the rule of the simulation. Range is from 0 to 255, inclusive, and default is 30.
 
 `-w, --width <WIDTH>` ~ Width of the simulation (ie. image), dictates the size of the initial state and the states of all iterations. Minimum of 3 pixels and default of 256 pixels.
 
